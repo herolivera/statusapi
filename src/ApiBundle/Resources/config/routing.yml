@@ -1,0 +1,3 @@
+api_homepage:
+    resource: "@ApiBundle/Controller"
+    type: annotation

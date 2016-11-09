@@ -1,0 +1,216 @@
+#%RAML 1.0
+title: Status API
+description: |
+  El objetivo del examen es desarrollar la api descripta en este documento.
+  Esta API tiene como publicar mensajes de status, estos son mensajes cortos, de no mas de 120 caracteres.
+  El servicio permite:
+    - Publicar mensages
+    - Buscar mensages
+    - traer los mensajes de a uno por id
+
+version: 1.0.0
+baseUri: /
+types:
+  status:
+    type: object
+    description: an object representing a status message
+    properties:
+      email:
+        description: publisher email
+        required: false
+        type: string
+      id:
+        description: id assigned by the system
+        required: false
+        type: number
+      status:
+        description: the status message
+        required: true
+      created_at:
+        description: ISO8601 datetime where the status was received
+        type: datetime
+        required: false
+  err:
+    type: object
+    properties:
+      code:
+        type: integer
+        description: Error code, a code for indetify the error cause
+      message:
+        type: string
+        description: a simple message explaining cause of the proble
+      link:
+        type: string
+        description: a link to the documentation explaining the error
+
+/status:
+  get:
+    description: |
+      this endpoint is used to retreive status messages, it will get
+      status messages paginated. By default, it will retrrieve 20 items, sorted
+      by date, newers first.
+    queryParameters:
+      p:
+        displayName: page numeber
+        description: the page nunmber
+        type: integer
+        required: false
+        default: 1
+      r:
+        displayName: rows per page
+        description: the number of rows per page
+        type: integer
+        required: false
+        default: 20
+      q:
+        displayName: query
+        description: text to search inside de status messages to filter them
+        type: string
+        required: false
+    responses:
+      200:
+        body:
+          application/json:
+            type: status[]
+            example: |
+              [
+                {
+                  "id": 243145735212777473,
+                  "email": "someone@somedomian.com",
+                  "created_at": "1994-11-05T14:15:30Z",
+                  "status": "Some other status message"
+                },
+                {
+                  "id": 243145735212777472,
+                  "email": "someone@somedomian.com",
+                  "created_at": "1994-11-05T13:15:30Z",
+                  "status": "Some status message"
+                }
+              ]
+      400:
+        description: |
+          its used when you recived bad pagination parameters for example
+        body:
+          application/json:
+            type: err
+            example: |
+                {
+                  "code":400001,
+                  "message": "invalid number of rows",
+                  "link": "http://some.url/docs"
+                }
+
+  post:
+    description: |
+      this endpoint its used to publish a new status message,
+      the messages can be either, owned by someone, or be an annon. status messages
+      annon statuses are send with "annonymus" as value in email.
+      if an email address is received, an e-mail will be sent with a code to validate ownership of the message.
+      the message will be published after a succesfull validation
+    body:
+      application/json:
+        type: status
+        example: |
+          {
+            "email": "someone@somedomian.com",
+            "status": "Some status message"
+          }
+    responses:
+      201:
+      400:
+        body:
+          application/json:
+            type: err
+            example: |
+              {
+                "code":400003,
+                "message": "missing email addres",
+                "link": "http://some.url/docs"
+              }
+  /{id}:
+    uriParameters:
+      id:
+        description: the status message id
+        type: integer
+    get:
+      description: gets an status message by its id
+      responses:
+        200:
+          body:
+            application/json:
+              type: status
+              example: |
+                {
+                  "id": 243145735212777472,
+                  "email": "someone@somedomian.com",
+                  "created_at": "1994-11-05T13:15:30Z",
+                  "status": "Some status message"
+                }
+        404:
+          body:
+            application/json:
+              type: err
+              example: |
+                {
+                  "code":400000,
+                  "message": "status messge not found",
+                  "link": "http://some.url/docs"
+                }
+
+    delete:
+      description: Deletes the status message, it will also send an email with a link que te confirm the operation
+      responses:
+        200:
+          body:
+            application/json:
+              example: |
+                {
+                  "email": "some@email.addr"
+                }
+        404:
+          body:
+            application/json:
+              type: err
+              example: |
+                {
+                  "code":400000,
+                  "message": "status messge not found",
+                  "link": "http://some.url/docs"
+                }
+        400:
+          body:
+            application/json:
+              type: err
+              example: |
+                {
+                  "code":400005,
+                  "message": "annon statuses cannot be deleted",
+                  "link": "http://some.url/docs"
+                }
+    /confirmation/{code}:
+      uriParameters:
+        code:
+          description: the code sended by email to the status message owner
+          type: string
+      get:
+        description: |
+          endpoint for the user to validate de received code after publishing
+          or requesting deletion of a status message
+        responses:
+          200:
+            body:
+              application/json:
+                example: |
+                  {
+                    "email": "some@email.addr"
+                  }
+          404:
+            body:
+              application/json:
+                type: err
+                example: |
+                  {
+                    "code":400000,
+                    "message": "status messge not found",
+                    "link": "http://some.url/docs"
+                  }

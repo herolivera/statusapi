@@ -1,0 +1,26 @@
+services:
+    StandardResponse:
+        class: ApiBundle\Utils\StandardResponse
+
+    kernel.listener.ApiEventListener:
+        class: ApiBundle\EventListener\ApiEventListener
+        tags:
+            - { name: kernel.event_listener, event: kernel.exception, method: onKernelException }
+
+    schema.dao:
+        class: ApiBundle\Dao\Schema
+        arguments: ["@database_connection"]
+
+    message.dao:
+        class: ApiBundle\Dao\Message
+        arguments: ["@database_connection"]
+
+    confirmation.dao:
+        class: ApiBundle\Dao\Confirmation
+        arguments: ["@database_connection"]
+        
+    swift_message_factory:
+        class:   Swift_Message
+        # call a static method
+        factory: ['Swift_Message', newInstance]
+    
